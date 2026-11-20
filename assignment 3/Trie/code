@@ -1,0 +1,54 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define ALPHABET_SIZE 26
+
+typedef struct TrieNode {
+    struct TrieNode *children[ALPHABET_SIZE];
+    int words_count;
+    int is_end;
+} TrieNode;
+
+TrieNode* createTrieNode() {
+    TrieNode *node = (TrieNode*)malloc(sizeof(TrieNode));
+    node->words_count = 0;
+    node->is_end = 0;
+    for (int i = 0; i < ALPHABET_SIZE; i++) node->children[i] = NULL;
+    return node;
+}
+
+void insert(TrieNode *root, const char *word) {
+    TrieNode *curr = root;
+    for (int i = 0; word[i]; i++) {
+        int idx = word[i] - 'a';
+        if (!curr->children[idx]) curr->children[idx] = createTrieNode();
+        curr = curr->children[idx];
+        curr->words_count++;
+    }
+    curr->is_end = 1;
+}
+
+int countPrefix(TrieNode *root, const char *prefix) {
+    TrieNode *curr = root;
+    for (int i = 0; prefix[i]; i++) {
+        int idx = prefix[i] - 'a';
+        if (!curr->children[idx]) return 0;
+        curr = curr->children[idx];
+    }
+    return curr->words_count;
+}
+
+int main() {
+    TrieNode *root = createTrieNode();
+    const char *contacts[] = {"anand", "anitha", "anu", "arun", "bala", "anusuya"};
+    for (int i = 0; i < 6; i++) insert(root, contacts[i]);
+
+    printf("a: %d  an: %d  anu: %d  b: %d  z: %d\n",
+           countPrefix(root, "a"),
+           countPrefix(root, "an"),
+           countPrefix(root, "anu"),
+           countPrefix(root, "b"),
+           countPrefix(root, "z"));
+    return 0;
+}
