@@ -1,0 +1,101 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct Node {
+    int key;
+    struct Node *left, *right;
+} Node;
+
+Node* rightRotate(Node *x) {
+    Node *y = x->left;
+    x->left = y->right;
+    y->right = x;
+    return y;
+}
+
+Node* leftRotate(Node *x) {
+    Node *y = x->right;
+    x->right = y->left;
+    y->left = x;
+    return y;
+}
+
+Node* splay(Node *root, int key) {
+    if (!root || root->key == key) return root;
+
+    // Key lies in left subtree
+    if (key < root->key) {
+        if (!root->left) return root;
+        // Zig-Zig (Left-Left)
+        if (key < root->left->key) {
+            root->left->left = splay(root->left->left, key);
+            root = rightRotate(root);
+        }
+        // Zig-Zag (Left-Right)
+        else if (key > root->left->key) {
+            root->left->right = splay(root->left->right, key);
+            if (root->left->right) root->left = leftRotate(root->left);
+        }
+        return (root->left == NULL) ? root : rightRotate(root);
+    }
+    // Key lies in right subtree
+    else {
+        if (!root->right) return root;
+        // Zig-Zag (Right-Left)
+        if (key < root->right->key) {
+            root->right->left = splay(root->right->left, key);
+            if (root->right->left) root->right = rightRotate(root->right);
+        }
+        // Zig-Zig (Right-Right)
+        else if (key > root->right->key) {
+            root->right->right = splay(root->right->right, key);
+            root = leftRotate(root);
+        }
+        return (root->right == NULL) ? root : leftRotate(root);
+    }
+}
+
+Node* insert(Node *root, int key) {
+    if (!root) {
+        Node *n = (Node*)malloc(sizeof(Node));
+        n->key = key; n->left = n->right = NULL;
+        return n;
+    }
+    root = splay(root, key);
+    if (root->key == key) return root;
+    Node *n = (Node*)malloc(sizeof(Node));
+    n->key = key;
+    if (key < root->key) {
+        n->right = root;
+        n->left = root->left;
+        root->left = NULL;
+    } else {
+        n->left = root;
+        n->right = root->right;
+        root->right = NULL;
+    }
+    return n;
+}
+
+void inorder(Node *root) {
+    if (root) {
+        inorder(root->left);
+        printf("%d ", root->key);
+        inorder(root->right);
+    }
+}
+
+int main() {
+    Node *root = NULL;
+    int keys[] = {5, 3, 9, 1, 4};
+    for (int i = 0; i < 5; i++) root = insert(root, keys[i]);
+
+    // Access key 3 (splays 3 to root)
+    root = splay(root, 3);
+    printf("Root after accessing 3: %d\n", root->key);
+
+    // Access key 9 (splays 9 to root)
+    root = splay(root, 9);
+    printf("Root after accessing 9: %d\n", root->key);
+    return 0;
+}
