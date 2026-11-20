@@ -1,0 +1,96 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+#define T 2 // Minimum degree: max keys = 2*T - 1 = 3
+
+typedef struct BTreeNode {
+    int keys[2 * T - 1];
+    struct BTreeNode *C[2 * T];
+    int n;
+    bool leaf;
+} BTreeNode;
+
+BTreeNode* createNode(bool leaf) {
+    BTreeNode* node = (BTreeNode*)malloc(sizeof(BTreeNode));
+    node->leaf = leaf;
+    node->n = 0;
+    for (int i = 0; i < 2 * T; i++) node->C[i] = NULL;
+    return node;
+}
+
+void splitChild(BTreeNode *x, int i, BTreeNode *y) {
+    BTreeNode *z = createNode(y->leaf);
+    z->n = T - 1;
+    for (int j = 0; j < T - 1; j++) z->keys[j] = y->keys[j + T];
+    if (!y->leaf) {
+        for (int j = 0; j < T; j++) z->C[j] = y->C[j + T];
+    }
+    y->n = T - 1;
+    for (int j = x->n; j >= i + 1; j--) x->C[j + 1] = x->C[j];
+    x->C[i + 1] = z;
+    for (int j = x->n - 1; j >= i; j--) x->keys[j + 1] = x->keys[j];
+    x->keys[i] = y->keys[T - 1];
+    x->n += 1;
+}
+
+void insertNonFull(BTreeNode *x, int k) {
+    int i = x->n - 1;
+    if (x->leaf) {
+        while (i >= 0 && x->keys[i] > k) {
+            x->keys[i + 1] = x->keys[i];
+            i--;
+        }
+        x->keys[i + 1] = k;
+        x->n += 1;
+    } else {
+        while (i >= 0 && x->keys[i] > k) i--;
+        i++;
+        if (x->C[i]->n == 2 * T - 1) {
+            splitChild(x, i, x->C[i]);
+            if (x->keys[i] < k) i++;
+        }
+        insertNonFull(x->C[i], k);
+    }
+}
+
+BTreeNode* insert(BTreeNode *root, int k) {
+    if (!root) {
+        root = createNode(true);
+        root->keys[0] = k;
+        root->n = 1;
+        return root;
+    }
+    if (root->n == 2 * T - 1) {
+        BTreeNode *s = createNode(false);
+        s->C[0] = root;
+        splitChild(s, 0, root);
+        int i = 0;
+        if (s->keys[0] < k) i++;
+        insertNonFull(s->C[i], k);
+        return s;
+    } else {
+        insertNonFull(root, k);
+        return root;
+    }
+}
+
+void printTree(BTreeNode *r) {
+    if (!r) return;
+    printf("[");
+    for (int i = 0; i < r->n; i++) printf("%d%s", r->keys[i], (i == r->n - 1) ? "" : " ");
+    printf("] ");
+    if (!r->leaf) {
+        for (int i = 0; i <= r->n; i++) printTree(r->C[i]);
+    }
+}
+
+int main() {
+    BTreeNode *root = NULL;
+    int keys[] = {10, 20, 5, 6, 12, 30, 7, 17};
+    for (int i = 0; i < 8; i++) root = insert(root, keys[i]);
+
+    printTree(root);
+    printf("\n");
+    return 0;
+}
